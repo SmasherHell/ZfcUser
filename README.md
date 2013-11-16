@@ -2,6 +2,9 @@ ZfcUser
 =======
 Version 0.0.1 Created by Evan Coury and the ZF-Commons team
 
+*Version info :* This fork contains bug fix and ehancement
+Fix : Custom hydrator for user entity (when registering user)
+
 Introduction
 ------------
 
