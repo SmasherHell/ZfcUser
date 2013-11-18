@@ -1,8 +1,11 @@
 ZfcUser
 =======
-Version 0.0.1 Created by Evan Coury and the ZF-Commons team
+Version 0.0.1 Originally created by Evan Coury and the ZF-Commons team
 
-*Version info :* This fork contains bug fix and ehancement
+**Version info :** This fork contains bug fix and ehancement<br>
+
+## Changelogs
+
 Fix : Custom hydrator for user entity (when registering user)
 
 Introduction
@@ -59,21 +62,8 @@ Installation
    by cloning it into `./vendor/`.
 2. Clone this project into your `./vendor/` directory.
 
-#### With composer
-
-1. Add this project and [ZfcBase](https://github.com/ZF-Commons/ZfcBase) in your composer.json:
-
-    ```json
-    "require": {
-        "zf-commons/zfc-user": "dev-master"
-    }
-    ```
-
-2. Now tell composer to download ZfcUser by running the command:
-
-    ```bash
-    $ php composer.phar update
-    ```
+#### Composer
+Not yet...coming soon
 
 #### Post installation
 
