@@ -15,6 +15,15 @@ return array(
             'zfcuser_zend_db_adapter' => 'Zend\Db\Adapter\Adapter',
         ),
     ),
+    'translator' => array(
+        'translation_files' => array(
+            array(
+                'type'     => 'gettext',
+                'filename' => __DIR__ . '/../language/fr_FR.mo',
+                'locale'  => 'fr_FR',
+            ),
+        ),
+    ),
     'router' => array(
         'routes' => array(
             'zfcuser' => array(
