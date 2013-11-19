@@ -67,6 +67,10 @@ msgstr "Valider"
 msgid "Sign In"
 msgstr "Se connecter"
 
+#: src/ZfcUser/language/msgIds.php:18 view/zfc-user/user/login.phtml:1
+msgid "Forgot password ?"
+msgstr "Mot de passe oublié ?"
+
 #: src/ZfcUser/language/msgIds.php:19 view/zfc-user/user/register.phtml:1
 msgid "Register"
 msgstr "Créer un compte"

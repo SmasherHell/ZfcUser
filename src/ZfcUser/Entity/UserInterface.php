@@ -94,4 +94,19 @@ interface UserInterface
      */
     public function setState($state);
 
+    /**
+     * Get token.
+     *
+     * @return int
+     */
+    public function getToken();
+
+    /**
+     * Set token.
+     *
+     * @param string $token
+     * @return UserInterface
+     */
+    public function setToken($token);
+
 }

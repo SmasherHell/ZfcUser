@@ -43,6 +43,12 @@ class UserController extends AbstractActionController
      * @var Form
      */
     protected $changeEmailForm;
+    
+    /**
+     *
+     * @var Form
+     */
+    protected $forgotPasswordForm;
 
     /**
      * @todo Make this dynamic / translation-friendly
@@ -328,6 +334,15 @@ class UserController extends AbstractActionController
         $this->flashMessenger()->setNamespace('change-email')->addMessage(true);
         return $this->redirect()->toRoute(static::ROUTE_CHANGEEMAIL);
     }
+    
+    public function forgotPasswordAction()
+    {
+        if ($this->zfcUserAuthentication()->hasIdentity()) {
+            $this->redirect()->toRoute($this->getOptions()->getLoginRedirectRoute());
+        }
+        
+        
+    }
 
     /**
      * Getters/setters for DI stuff
@@ -441,5 +456,18 @@ class UserController extends AbstractActionController
     {
         $this->changeEmailForm = $changeEmailForm;
         return $this;
+    }
+    
+    public function setForgotPasswordForm($forgotPasswordForm)
+    {
+        $this->forgotPasswordForm = $forgotPasswordForm;
+        return $this;
+    }
+    
+    public function getForgotPasswordForm()
+    {
+        if (!isset($this->forgotPasswordForm)) {
+            $this->setForgotPasswordForm($this->getServiceLocator()->get('zfcuser_forgot_password_change'));
+        }
     }
 }

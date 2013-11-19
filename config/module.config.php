@@ -98,6 +98,16 @@ return array(
                             ),
                         ),                        
                     ),
+                    'forgotPassword' => array(
+                        'type' => 'Literal',
+                        'options' => array(
+                            'route' => '/forgot-password',
+                            'defaults' => array(
+                                'controller' => 'zfcuser',
+                                'action' => 'forgotPassword',
+                            ),
+                        ),                        
+                    ),
                 ),
             ),
         ),

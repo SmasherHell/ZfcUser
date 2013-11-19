@@ -33,7 +33,12 @@ class User implements UserInterface
      * @var int
      */
     protected $state;
-
+    
+    /**
+     * @var string 
+     */
+    protected $token;
+    
     /**
      * Get id.
      *
@@ -165,4 +170,17 @@ class User implements UserInterface
         $this->state = $state;
         return $this;
     }
+    
+    public function getToken()
+    {
+        return $this->token;
+    }
+
+    public function setToken($token)
+    {
+        $this->token = $token;
+        return $this;
+    }
+
+
 }
