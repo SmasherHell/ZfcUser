@@ -6,7 +6,8 @@ Version 0.0.1 Originally created by Evan Coury and the ZF-Commons team
 
 ## Changelogs
 
-Fix : Custom hydrator for user entity (when registering user)
+[2013-11-15] FIX : Custom hydrator for user entity (when registering user)<br>
+[2013-11-19] FIX : Language dir location, added translator configuration for French
 
 Introduction
 ------------
