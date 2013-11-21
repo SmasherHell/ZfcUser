@@ -33,4 +33,31 @@ interface AuthenticationOptionsInterface extends PasswordOptionsInterface
      * @return array
      */
     public function getAuthIdentityFields();
+    
+    /**
+     * Get reset password mail sender 
+     * @return type
+     */
+    public function getResetPasswordMailSender();
+
+    /**
+     * Get authentification token timeout
+     * @return type
+     */
+    public function getAuthentificationTokenTimeout();
+
+    /**
+     * Set reset password mail sender
+     * @param type $resetPasswordMailSender
+     * @return \ZfcUser\Options\ModuleOptions
+     */
+    public function setResetPasswordMailSender($resetPasswordMailSender);
+
+    /**
+     * Set authentification token timeout
+     * @param type $authentificationTokenTimeout
+     * @return \ZfcUser\Options\ModuleOptions
+     */
+    public function setAuthentificationTokenTimeout($authentificationTokenTimeout);
+
 }

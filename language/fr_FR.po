@@ -132,3 +132,8 @@ msgstr "Bonjour"
 #: view/zfc-user/user/index.phtml:3
 msgid "Sign Out"
 msgstr "Se déconnecter"
+
+#: view/zfc-user/user/forgot-password.phtml:1
+msgid "Forgot password ?"
+msgstr "Mot de passe oublié ?"
+

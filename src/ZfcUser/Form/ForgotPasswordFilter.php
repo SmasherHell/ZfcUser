@@ -5,7 +5,7 @@ namespace ZfcUser\Form;
 use ZfcBase\InputFilter\ProvidesEventsInputFilter;
 use ZfcUser\Options\AuthenticationOptionsInterface;
 
-class LoginFilter extends ProvidesEventsInputFilter
+class ForgotPasswordFilter extends ProvidesEventsInputFilter
 {
     public function __construct(AuthenticationOptionsInterface $options)
     {
@@ -14,12 +14,6 @@ class LoginFilter extends ProvidesEventsInputFilter
             'required'   => true,
             'validators' => array()
         );
-
-        $identityFields = $options->getAuthIdentityFields();
-        if ($identityFields == array('email')) {
-            $validators = array('name' => 'EmailAddress');
-            array_push($identityParams['validators'], $validators);
-        }
 
         $this->add($identityParams);
 

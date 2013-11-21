@@ -55,6 +55,11 @@ class User extends EventProvider implements ServiceManagerAwareInterface
      * @var Hydrator\ClassMethods
      */
     protected $formHydrator;
+    
+    /**
+     * @var Hydrator\HydratorInterface 
+     */
+    protected $userHydrator;
 
     /**
      * createFromForm
@@ -107,17 +112,20 @@ class User extends EventProvider implements ServiceManagerAwareInterface
      * @param array $data
      * @return boolean
      */
-    public function changePassword(array $data)
+    public function changePassword(array $data, $token = null)
     {
         $currentUser = $this->getAuthService()->getIdentity();
-
-        $oldPass = $data['credential'];
+        
+        if(isset($data['credential'])){
+            $oldPass = $data['credential'];
+        }
+        
         $newPass = $data['newCredential'];
-
+        
         $bcrypt = new Bcrypt;
         $bcrypt->setCost($this->getOptions()->getPasswordCost());
-
-        if (!$bcrypt->verify($oldPass, $currentUser->getPassword())) {
+        
+        if (!$bcrypt->verify($oldPass, $currentUser->getPassword()) && !$bcrypt->verify($currentUser->getUsername() . '|' . $currentUser->getEmail() . '|' . $currentUser->gettokenTimestamp(), $token)) {
             return false;
         }
 
@@ -125,7 +133,10 @@ class User extends EventProvider implements ServiceManagerAwareInterface
         $currentUser->setPassword($pass);
 
         $this->getEventManager()->trigger(__FUNCTION__, $this, array('user' => $currentUser));
-        $this->getUserMapper()->update($currentUser);
+        $this->getUserMapper()->update($currentUser, null, null, $this->getUserHydrator());
+        if (!empty($token)) {
+            $this->deleteAuthToken($currentUser);
+        }
         $this->getEventManager()->trigger(__FUNCTION__.'.post', $this, array('user' => $currentUser));
 
         return true;
@@ -145,11 +156,60 @@ class User extends EventProvider implements ServiceManagerAwareInterface
         $currentUser->setEmail($data['newIdentity']);
 
         $this->getEventManager()->trigger(__FUNCTION__, $this, array('user' => $currentUser));
-        $this->getUserMapper()->update($currentUser);
+        $this->getUserMapper()->update($currentUser, null, null, $this->getUserHydrator());
         $this->getEventManager()->trigger(__FUNCTION__.'.post', $this, array('user' => $currentUser));
 
         return true;
     }
+    
+    public function generateAuthToken(\ZfcUser\Entity\UserInterface $user)
+    {
+        $time       = time();
+        $encode     = $user->getUsername() . "|" . $user->getEmail() . "|" . $time;
+        $bcrypt     = new Bcrypt;
+        $bcrypt->setCost($this->getOptions()->getPasswordCost());
+        $token = $bcrypt->create($encode);
+        
+        $user->setToken($token);
+        $user->setTokenTimestamp($time);
+        
+        $this->getEventManager()->trigger(__FUNCTION__, $this, array('user' => $user));
+        $this->getUserMapper()->update($user, null, null, $this->getUserHydrator());
+        $this->getEventManager()->trigger(__FUNCTION__.'.post', $this, array('user' => $user));
+        
+        return $token;
+    }
+
+    public function deleteAuthToken(\ZfcUser\Entity\UserInterface $user)
+    {
+        $user->setToken('');
+        $user->setTokenTimestamp('');
+        
+        $this->getEventManager()->trigger(__FUNCTION__, $this, array('user' => $user));
+        $this->getUserMapper()->update($user, null, null, $this->getUserHydrator());
+        $this->getEventManager()->trigger(__FUNCTION__.'.post', $this, array('user' => $user));
+        
+        return true;
+    }
+    
+    public function checkAuthToken($token, $email)
+    {
+        $return = false;
+        $user = $this->getUserMapper()->findByTokenAndEmail($token, $email);
+        
+        if (!$user) {
+            return false;
+        }
+        
+        $timeout = $this->getOptions()->getAuthentificationTokenTimeout();
+        if(time() <= $user->getTokenTimestamp() + $timeout) {
+            $return = $user;
+        }
+        // $this->deleteAuthToken($user);
+        return $return;
+    }
+    
+    
 
     /**
      * getUserMapper
@@ -311,6 +371,30 @@ class User extends EventProvider implements ServiceManagerAwareInterface
     public function setFormHydrator(Hydrator\HydratorInterface $formHydrator)
     {
         $this->formHydrator = $formHydrator;
+        return $this;
+    }
+    
+    /**
+     * Get User Entity Hydrator
+     * @return Hydrator\HydratorInterface
+     */
+    public function getUserHydrator()
+    {
+        if (!$this->userHydrator instanceof Hydrator\HydratorInterface) {
+            $this->setUserHydrator($this->getServiceManager()->get('zfcuser_user_hydrator'));
+        }
+        
+        return $this->userHydrator;
+    }
+    
+    /**
+     * Set User Entity Hydrator
+     * @param \Zend\Stdlib\Hydrator\HydratorInterface $userHydrator
+     * @return \ZfcUser\Service\User
+     */
+    public function setUserHydrator(Hydrator\HydratorInterface $userHydrator)
+    {
+        $this->userHydrator = $userHydrator;
         return $this;
     }
 }

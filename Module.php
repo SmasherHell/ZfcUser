@@ -105,6 +105,13 @@ class Module implements
 
                 'ZfcUser\Authentication\Adapter\AdapterChain' => 'ZfcUser\Authentication\Adapter\AdapterChainServiceFactory',
 
+                'zfcuser_mailer'                    => function ($sm) {
+                    $mailer = new \ZfcUser\Service\Mailer;
+                    $mailer->setMessage(new \Zend\Mail\Message)
+                           ->setTransport(new \Zend\Mail\Transport\Sendmail);
+                    return $mailer;
+                },
+                        
                 'zfcuser_login_form' => function($sm) {
                     $options = $sm->get('zfcuser_module_options');
                     $form = new Form\Login(null, $options);
@@ -134,6 +141,13 @@ class Module implements
                     $options = $sm->get('zfcuser_module_options');
                     $form = new Form\ChangePassword(null, $sm->get('zfcuser_module_options'));
                     $form->setInputFilter(new Form\ChangePasswordFilter($options));
+                    return $form;
+                },
+                        
+                'zfcuser_forgot_password' => function($sm) {
+                    $options = $sm->get('zfcuser_module_options');
+                    $form = new Form\ForgotPassword(null, $sm->get('zfcuser_module_options'));
+                    $form->setInputFilter(new Form\ForgotPasswordFilter($options));
                     return $form;
                 },
 

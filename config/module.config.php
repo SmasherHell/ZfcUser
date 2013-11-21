@@ -2,7 +2,7 @@
 return array(
     'view_manager' => array(
         'template_path_stack' => array(
-            'zfcuser' => __DIR__ . '/../view',
+            'zfcuser'                       => __DIR__ . '/../view',
         ),
     ),
     'controllers' => array(
@@ -88,6 +88,26 @@ return array(
                             ),
                         ),                        
                     ),
+                    'resetpassword' => array(
+                        'type' => 'Segment',
+                        'options' => array(
+                            'route' => '/reset-password/:token',
+                            'defaults' => array(
+                                'controller' => 'zfcuser',
+                                'action'     => 'changepassword',
+                            ),
+                        ),                        
+                    ),
+                    'canceltoken' => array(
+                        'type' => 'Segment',
+                        'options' => array(
+                            'route' => '/cancel-token/:token',
+                            'defaults' => array(
+                                'controller' => 'zfcuser',
+                                'action'     => 'cancelToken',
+                            ),
+                        ),                        
+                    ),
                     'changeemail' => array(
                         'type' => 'Literal',
                         'options' => array(
@@ -98,7 +118,7 @@ return array(
                             ),
                         ),                        
                     ),
-                    'forgotPassword' => array(
+                    'forgotpassword' => array(
                         'type' => 'Literal',
                         'options' => array(
                             'route' => '/forgot-password',

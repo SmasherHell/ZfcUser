@@ -4,14 +4,17 @@ namespace ZfcUser\Controller;
 
 use Zend\Form\Form;
 use Zend\Mvc\Controller\AbstractActionController;
-use Zend\Stdlib\ResponseInterface as Response;
 use Zend\Stdlib\Parameters;
+use Zend\Stdlib\ResponseInterface as Response;
 use Zend\View\Model\ViewModel;
-use ZfcUser\Service\User as UserService;
+use Zend\View\Renderer\PhpRenderer;
 use ZfcUser\Options\UserControllerOptionsInterface;
+use ZfcUser\Service\MailerInterface;
+use ZfcUser\Service\User as UserService;
 
 class UserController extends AbstractActionController
 {
+    const ROUTE_FORGOTPASSWD = 'zfcuser/forgotpassword';
     const ROUTE_CHANGEPASSWD = 'zfcuser/changepassword';
     const ROUTE_LOGIN        = 'zfcuser/login';
     const ROUTE_REGISTER     = 'zfcuser/register';
@@ -60,6 +63,11 @@ class UserController extends AbstractActionController
      * @var UserControllerOptionsInterface
      */
     protected $options;
+    
+    /**
+     * @var MailerInterface
+     */
+    protected $mailerService;
 
     /**
      * User page
@@ -143,13 +151,14 @@ class UserController extends AbstractActionController
         $redirect = $this->params()->fromPost('redirect', $this->params()->fromQuery('redirect', false));
 
         $result = $adapter->prepareForAuthentication($this->getRequest());
-
         // Return early if an adapter returned a response
         if ($result instanceof Response) {
             return $result;
         }
-
+        
         $auth = $this->zfcUserAuthentication()->getAuthService()->authenticate($adapter);
+        
+        // var_dump($result, $auth);exit;
 
         if (!$auth->isValid()) {
             $this->flashMessenger()->setNamespace('zfcuser-login-form')->addMessage($this->failedLoginMessage);
@@ -238,15 +247,36 @@ class UserController extends AbstractActionController
      */
     public function changepasswordAction()
     {
+        // Force login with token
+        $token      = $this->params()->fromRoute('token');
+        $tokenMode  = !empty($token);
+        
+        if ($this->params()->fromRoute('token')) {
+            $fulltoken = base64_decode($this->params()->fromRoute('token'));
+            $tokenSplit = explode("|", $fulltoken);
+            $check = $this->getUserService()->checkAuthToken($tokenSplit[0], $tokenSplit[1]);
+            $this->getRequest()->setPost(new Parameters(array(
+                'identity'  => $tokenSplit[1],
+                'token'     => $tokenSplit[0],
+            )));
+            $this->forward()->dispatch(static::CONTROLLER_NAME, array('action' => 'authenticate'));
+            // Reset redirect
+            if ($this->getResponse()->getStatusCode() == 302) {
+                $this->getResponse()->setStatusCode(200);
+            }
+        }
+        
         // if the user isn't logged in, we can't change password
-        if (!$this->zfcUserAuthentication()->hasIdentity()) {
+        if (!$this->zfcUserAuthentication()->hasIdentity() || !$check) {
             // redirect to the login redirect route
             return $this->redirect()->toRoute($this->getOptions()->getLoginRedirectRoute());
         }
 
         $form = $this->getChangePasswordForm();
         $prg = $this->prg(static::ROUTE_CHANGEPASSWD);
-
+        if ($tokenMode) {
+            $form->remove('credential');
+        }
         $fm = $this->flashMessenger()->setNamespace('change-password')->getMessages();
         if (isset($fm[0])) {
             $status = $fm[0];
@@ -259,6 +289,7 @@ class UserController extends AbstractActionController
         } elseif ($prg === false) {
             return array(
                 'status' => $status,
+                'tokenMode' => $tokenMode,
                 'changePasswordForm' => $form,
             );
         }
@@ -268,17 +299,26 @@ class UserController extends AbstractActionController
         if (!$form->isValid()) {
             return array(
                 'status' => false,
+                'tokenMode' => $tokenMode,
                 'changePasswordForm' => $form,
             );
         }
 
-        if (!$this->getUserService()->changePassword($form->getData())) {
+        if (!$this->getUserService()->changePassword($form->getData(), $this->params()->fromRoute('token'))) {
             return array(
                 'status' => false,
-                'changePasswordForm' => $form,
+                'tokenMode' => $tokenMode,
+                 'changePasswordForm' => $form,
             );
         }
-
+        if ($tokenMode) {
+            // Clear identity
+            $this->zfcUserAuthentication()->getAuthAdapter()->resetAdapters();
+            $this->zfcUserAuthentication()->getAuthService()->clearIdentity();
+            // Redirect
+            $this->flashMessenger()->setNamespace('change-password')->addMessage(true);
+            return $this->redirect()->toRoute(static::ROUTE_LOGIN);
+        }
         $this->flashMessenger()->setNamespace('change-password')->addMessage(true);
         return $this->redirect()->toRoute(static::ROUTE_CHANGEPASSWD);
     }
@@ -340,8 +380,72 @@ class UserController extends AbstractActionController
         if ($this->zfcUserAuthentication()->hasIdentity()) {
             $this->redirect()->toRoute($this->getOptions()->getLoginRedirectRoute());
         }
+        $form   = $this->getForgotPasswordForm();
+        $status = false;
+        $prg    = $this->prg(static::ROUTE_FORGOTPASSWD);
+                
+        if ($prg instanceof Response) {
+            return $prg;
+        }elseif ($prg === false && !$this->getRequest()->isPost()) {
+            return array(
+                'forgotPasswordForm' => $form,
+                'status'             => false
+            );
+        }
+        // Get identity from Mail
+        $service = $this->getUserService();
+        // var_dump($prg);
+        $user = $service->getUserMapper()
+                        ->findByEmail($prg['identity']);
+        // Send Mail with token
+        if($user){
+            $token      = $this->getUserService()->generateAuthToken($user);  
+            $sender     = $this->getOptions()->getResetPasswordMailSender();
+            $translator = $this->getServiceLocator()->get('translator');
+            $subject    = $translator->translate('Reset Password request');
+            $renderer   = new PhpRenderer();
+            $resolver   = new \Zend\View\Resolver\TemplateMapResolver(array(
+                'zfcuser_forgot_password_mail'  => __DIR__ . '/../../../view/zfc-user/user/forgot-password-mail-template.phtml',
+            ));
+            $renderer->setHelperPluginManager($this->getServiceLocator()->get('ViewRenderer')->getHelperPluginManager());
+            $renderer->setResolver($resolver);
+            $view       = new ViewModel();
+            
+            $view->setTemplate('zfcuser_forgot_password_mail');
+            $view->setVariables(array(
+                'token' => $token . "|" . $user->getemail(),
+            ));
+            $messagePart= new \Zend\Mime\Part($renderer->render($view));
+            $messagePart->type = "text/html";
+            $message    = new \Zend\Mime\Message();
+            $message->setParts(array($messagePart));
+            $mailer     = $this->getMailerService();
+            $mailer->setFrom($sender)
+                    ->addTo($user->getEmail(), $user->getDisplayName())
+                    ->setSubject($subject)
+                    ->setBody($message)
+                    ->send();
+            $status = true;
+        }
+        return array(
+            'forgotPasswordForm' => $form,
+            'status'             => $status,
+        );
+    }
+    
+    public function cancelTokenAction()
+    {
+        $fulltoken = base64_decode($this->params()->fromRoute('token'));
+        $tokenSplit = explode("|", $fulltoken);
+        $user = $this->getUserService()->getUserMapper()->findByTokenAndEmail($tokenSplit[0], $tokenSplit[1]);
+        $status = false;
+        if($user) {
+            $status = $this->getUserService()->deleteAuthToken($user);
+        }
         
-        
+        return new ViewModel(array(
+            'status' => $status,
+        ));
     }
 
     /**
@@ -360,6 +464,20 @@ class UserController extends AbstractActionController
     {
         $this->userService = $userService;
         return $this;
+    }
+    
+    public function getMailerService()
+    {
+        if (!$this->mailerService) {
+            $this->setMailerService($this->getServiceLocator()->get('zfcuser_mailer'));
+        }
+        
+        return $this->mailerService;
+    }
+    
+    public function setMailerService(MailerInterface $mailerService)
+    {
+        $this->mailerService = $mailerService;
     }
 
     public function getRegisterForm()
@@ -467,7 +585,8 @@ class UserController extends AbstractActionController
     public function getForgotPasswordForm()
     {
         if (!isset($this->forgotPasswordForm)) {
-            $this->setForgotPasswordForm($this->getServiceLocator()->get('zfcuser_forgot_password_change'));
+            $this->setForgotPasswordForm($this->getServiceLocator()->get('zfcuser_forgot_password'));
         }
+        return $this->forgotPasswordForm;
     }
 }

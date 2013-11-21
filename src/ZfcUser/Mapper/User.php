@@ -29,6 +29,16 @@ class User extends AbstractDbMapper implements UserInterface
         $this->getEventManager()->trigger('find', $this, array('entity' => $entity));
         return $entity;
     }
+    
+    public function findByTokenAndEmail($token, $email)
+    {
+        $select = $this->getSelect()
+                       ->where(array('token' => $token, 'email' => $email));
+
+        $entity = $this->select($select)->current();
+        $this->getEventManager()->trigger('find', $this, array('entity' => $entity));
+        return $entity;
+    }
 
     public function findById($id)
     {

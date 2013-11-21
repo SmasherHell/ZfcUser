@@ -57,6 +57,7 @@ class Db extends AbstractAdapter implements ServiceManagerAwareInterface
         $identity   = $e->getRequest()->getPost()->get('identity');
         $credential = $e->getRequest()->getPost()->get('credential');
         $credential = $this->preProcessCredential($credential);
+        $token      = $e->getRequest()->getPost()->get('token');
         $userObject = NULL;
 
         // Cycle through the configured identity sources and test each
@@ -89,17 +90,17 @@ class Db extends AbstractAdapter implements ServiceManagerAwareInterface
                 return false;
             }
         }
-
+        
         $bcrypt = new Bcrypt();
         $bcrypt->setCost($this->getOptions()->getPasswordCost());
-        if (!$bcrypt->verify($credential,$userObject->getPassword())) {
+        if (!$bcrypt->verify($credential,$userObject->getPassword()) && !$bcrypt->verify($userObject->getUsername() . "|" . $userObject->getEmail() . '|' . $userObject->getTokenTimestamp(), $token)) {
             // Password does not match
             $e->setCode(AuthenticationResult::FAILURE_CREDENTIAL_INVALID)
               ->setMessages(array('Supplied credential is invalid.'));
             $this->setSatisfied(false);
             return false;
         }
-
+        
         // regen the id
         $session = new SessionContainer($this->getStorage()->getNameSpace());
         $session->getManager()->regenerateId();

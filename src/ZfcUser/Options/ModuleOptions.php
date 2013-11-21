@@ -120,6 +120,16 @@ class ModuleOptions extends AbstractOptions implements
             'timeout'    => 300,
         ),
     );
+    
+    /**
+     * @var string 
+     */
+    protected $resetPasswordMailSender;
+    
+    /**
+     * @var int 
+     */
+    protected $authentificationTokenTimeout;
 
     /**
      * set login redirect route
@@ -556,4 +566,46 @@ class ModuleOptions extends AbstractOptions implements
     {
         return $this->formCaptchaOptions;
     }
+    
+    /**
+     * Get reset password mail sender 
+     * @return type
+     */
+    public function getResetPasswordMailSender()
+    {
+        return $this->resetPasswordMailSender;
+    }
+
+    /**
+     * Get authentification token timeout
+     * @return type
+     */
+    public function getAuthentificationTokenTimeout()
+    {
+        return $this->authentificationTokenTimeout;
+    }
+
+    /**
+     * Set reset password mail sender
+     * @param type $resetPasswordMailSender
+     * @return \ZfcUser\Options\ModuleOptions
+     */
+    public function setResetPasswordMailSender($resetPasswordMailSender)
+    {
+        $this->resetPasswordMailSender = $resetPasswordMailSender;
+        return $this;
+    }
+
+    /**
+     * Set authentification token timeout
+     * @param type $authentificationTokenTimeout
+     * @return \ZfcUser\Options\ModuleOptions
+     */
+    public function setAuthentificationTokenTimeout($authentificationTokenTimeout)
+    {
+        $this->authentificationTokenTimeout = $authentificationTokenTimeout;
+        return $this;
+    }
+
+
 }

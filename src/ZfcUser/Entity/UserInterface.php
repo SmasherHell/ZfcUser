@@ -109,4 +109,17 @@ interface UserInterface
      */
     public function setToken($token);
 
+     /**
+     * Get TokenTimestamp
+     * @return int
+     */
+    public function getTokenTimestamp();
+   
+    /**
+     * Set TokenTimestamp
+     * @param int $tokenTimestamp
+     * @return \ZfcUser\Entity\User
+     */
+    public function setTokenTimestamp($tokenTimestamp);
+
 }

@@ -20,3 +20,4 @@ translate('Register');
 translate("No record matching the input was found");
 translate("A record matching the input was found");
 translate("Authentication failed. Please try again.");
+translate("Forgot password ?");

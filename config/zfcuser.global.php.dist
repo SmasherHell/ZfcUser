@@ -218,6 +218,15 @@ $settings = array(
     //'table_name' => 'user',
     
     /**
+     * Reset Password
+     * 
+     * Configure mail sender, application or website title
+     * Authentification Token Timeout in secondes
+     */
+    // 'reset_password_mail_sender'     => 'zfcuser@domain.com',
+    // 'authentification_token_timeout' => 3600
+    
+    /**
      * End of ZfcUser configuration
      */
 );

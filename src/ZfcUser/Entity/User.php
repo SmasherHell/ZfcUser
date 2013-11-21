@@ -40,6 +40,11 @@ class User implements UserInterface
     protected $token;
     
     /**
+     * @var int
+     */
+    protected $tokenTimestamp;
+    
+    /**
      * Get id.
      *
      * @return int
@@ -171,14 +176,43 @@ class User implements UserInterface
         return $this;
     }
     
+    /**
+     * Get Token
+     * @return string
+     */
     public function getToken()
     {
         return $this->token;
     }
 
+    /**
+     * Set Token
+     * @param string $token
+     * @return \ZfcUser\Entity\User
+     */
     public function setToken($token)
     {
         $this->token = $token;
+        return $this;
+    }
+
+    /**
+     * Get TokenTimestamp
+     * @return int
+     */
+    public function getTokenTimestamp()
+    {
+        return $this->tokenTimestamp;
+    }
+    
+    /**
+     * Set TokenTimestamp
+     * @param int $tokenTimestamp
+     * @return \ZfcUser\Entity\User
+     */
+    public function setTokenTimestamp($tokenTimestamp)
+    {
+        $this->tokenTimestamp = $tokenTimestamp;
         return $this;
     }
 
