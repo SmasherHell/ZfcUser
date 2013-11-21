@@ -7,7 +7,8 @@ Version 0.0.1 Originally created by Evan Coury and the ZF-Commons team
 ## Changelogs
 
 [2013-11-15] FIX : Custom hydrator for user entity (when registering user)<br>
-[2013-11-19] FIX : Language dir location, added translator configuration for French
+[2013-11-19] FIX : Language dir location, added translator configuration for French<br>
+[2013-11-21] FEATURE : Forgot password implementation (issue [#1](https://github.com/SmasherHell/ZfcUser/issues/1))
 
 Introduction
 ------------
