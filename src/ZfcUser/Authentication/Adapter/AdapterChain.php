@@ -47,9 +47,7 @@ class AdapterChain extends EventProvider implements AdapterInterface
     {
         $e = $this->getEvent();
         $e->setRequest($request);
-
         $this->getEventManager()->trigger('authenticate.pre', $e);
-
         $result = $this->getEventManager()->trigger('authenticate', $e, function($test) {
             return ($test instanceof Response);
         });
@@ -65,11 +63,9 @@ class AdapterChain extends EventProvider implements AdapterInterface
                 )
             );
         }
-
         if ($e->getIdentity()) {
             return true;
         }
-
         return false;
     }
 

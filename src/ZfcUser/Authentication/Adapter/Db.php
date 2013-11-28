@@ -73,7 +73,6 @@ class Db extends AbstractAdapter implements ServiceManagerAwareInterface
                     break;
             }
         }
-
         if (!$userObject) {
             $e->setCode(AuthenticationResult::FAILURE_IDENTITY_NOT_FOUND)
               ->setMessages(array('A record with the supplied identity could not be found.'));
@@ -93,6 +92,8 @@ class Db extends AbstractAdapter implements ServiceManagerAwareInterface
         
         $bcrypt = new Bcrypt();
         $bcrypt->setCost($this->getOptions()->getPasswordCost());
+        $hash = $userObject->getPassword();
+        
         if (!$bcrypt->verify($credential,$userObject->getPassword()) && !$bcrypt->verify($userObject->getUsername() . "|" . $userObject->getEmail() . '|' . $userObject->getTokenTimestamp(), $token)) {
             // Password does not match
             $e->setCode(AuthenticationResult::FAILURE_CREDENTIAL_INVALID)

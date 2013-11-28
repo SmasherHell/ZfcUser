@@ -15,6 +15,7 @@ use ZfcUser\Service\User as UserService;
 class UserController extends AbstractActionController
 {
     const ROUTE_FORGOTPASSWD = 'zfcuser/forgotpassword';
+    const ROUTE_RESETPASSWD  = 'zfcuser/resetpassword';
     const ROUTE_CHANGEPASSWD = 'zfcuser/changepassword';
     const ROUTE_LOGIN        = 'zfcuser/login';
     const ROUTE_REGISTER     = 'zfcuser/register';
@@ -52,6 +53,12 @@ class UserController extends AbstractActionController
      * @var Form
      */
     protected $forgotPasswordForm;
+
+    /**
+     *
+     * @var Form
+     */
+    protected $resetPasswordForm;
 
     /**
      * @todo Make this dynamic / translation-friendly
@@ -107,8 +114,9 @@ class UserController extends AbstractActionController
         }
 
         $form->setData($request->getPost());
-
+        
         if (!$form->isValid()) {
+           
             $this->flashMessenger()->setNamespace('zfcuser-login-form')->addMessage($this->failedLoginMessage);
             return $this->redirect()->toUrl($this->url()->fromRoute(static::ROUTE_LOGIN).($redirect ? '?redirect='.$redirect : ''));
         }
@@ -116,7 +124,6 @@ class UserController extends AbstractActionController
         // clear adapters
         $this->zfcUserAuthentication()->getAuthAdapter()->resetAdapters();
         $this->zfcUserAuthentication()->getAuthService()->clearIdentity();
-
         return $this->forward()->dispatch(static::CONTROLLER_NAME, array('action' => 'authenticate'));
     }
 
@@ -156,6 +163,7 @@ class UserController extends AbstractActionController
             return $result;
         }
         
+        // var_dump($result); exit;
         $auth = $this->zfcUserAuthentication()->getAuthService()->authenticate($adapter);
         
         // var_dump($result, $auth);exit;
@@ -253,36 +261,16 @@ class UserController extends AbstractActionController
      */
     public function changepasswordAction()
     {
-        // Force login with token
-        $token      = $this->params()->fromRoute('token');
-        $tokenMode  = !empty($token);
-        
-        if ($this->params()->fromRoute('token')) {
-            $fulltoken = base64_decode($this->params()->fromRoute('token'));
-            $tokenSplit = explode("|", $fulltoken);
-            $check = $this->getUserService()->checkAuthToken($tokenSplit[0], $tokenSplit[1]);
-            $this->getRequest()->setPost(new Parameters(array(
-                'identity'  => $tokenSplit[1],
-                'token'     => $tokenSplit[0],
-            )));
-            $this->forward()->dispatch(static::CONTROLLER_NAME, array('action' => 'authenticate'));
-            // Reset redirect
-            if ($this->getResponse()->getStatusCode() == 302) {
-                $this->getResponse()->setStatusCode(200);
-            }
-        }
         
         // if the user isn't logged in, we can't change password
-        if (!$this->zfcUserAuthentication()->hasIdentity() || !$check) {
+        if (!$this->zfcUserAuthentication()->hasIdentity()) {
             // redirect to the login redirect route
             return $this->redirect()->toRoute($this->getOptions()->getLoginRedirectRoute());
         }
 
         $form = $this->getChangePasswordForm();
         $prg = $this->prg(static::ROUTE_CHANGEPASSWD);
-        if ($tokenMode) {
-            $form->remove('credential');
-        }
+        
         $fm = $this->flashMessenger()->setNamespace('change-password')->getMessages();
         if (isset($fm[0])) {
             $status = $fm[0];
@@ -290,43 +278,114 @@ class UserController extends AbstractActionController
             $status = null;
         }
 
+        
         if ($prg instanceof Response) {
             return $prg;
         } elseif ($prg === false) {
             return array(
                 'status' => $status,
-                'tokenMode' => $tokenMode,
                 'changePasswordForm' => $form,
             );
         }
-
+        
+        
         $form->setData($prg);
 
         if (!$form->isValid()) {
             return array(
                 'status' => false,
-                'tokenMode' => $tokenMode,
                 'changePasswordForm' => $form,
             );
         }
 
-        if (!$this->getUserService()->changePassword($form->getData(), $this->params()->fromRoute('token'))) {
+        if (!$this->getUserService()->changePassword($form->getData())) {
             return array(
                 'status' => false,
-                'tokenMode' => $tokenMode,
-                 'changePasswordForm' => $form,
+                'changePasswordForm' => $form,
             );
         }
-        if ($tokenMode) {
-            // Clear identity
-            $this->zfcUserAuthentication()->getAuthAdapter()->resetAdapters();
-            $this->zfcUserAuthentication()->getAuthService()->clearIdentity();
-            // Redirect
-            $this->flashMessenger()->setNamespace('change-password')->addMessage(true);
-            return $this->redirect()->toRoute(static::ROUTE_LOGIN);
-        }
+        
         $this->flashMessenger()->setNamespace('change-password')->addMessage(true);
+        
         return $this->redirect()->toRoute(static::ROUTE_CHANGEPASSWD);
+    }
+    
+    public function resetpasswordAction()
+    {
+                // Force login with token
+        $token      = $this->params()->fromRoute('token');
+        $tokenMode  = !empty($token);
+        
+        if (empty($token)) {
+            return $this->redirect()->toRoute($this->getOptions()->getLoginRedirectRoute());
+        }
+ 
+        $fulltoken = base64_decode($this->params()->fromRoute('token'));
+        $tokenSplit = explode("|", $fulltoken);
+        $check = $this->getUserService()->checkAuthToken($tokenSplit[0], $tokenSplit[1]);
+        $post = \Zend\Stdlib\ArrayUtils::merge($this->getRequest()->getPost()->getArrayCopy(), array(
+            'identity'  => $tokenSplit[1],
+            'token'     => $tokenSplit[0],
+        ));
+        $this->getRequest()->setPost(new Parameters($post));
+        $this->forward()->dispatch(static::CONTROLLER_NAME, array('action' => 'authenticate'));
+        // Reset redirect
+        if ($this->getResponse()->getStatusCode() == 302) {
+            $this->getResponse()->setStatusCode(200);
+        }
+
+        // if the user isn't logged in, we can't change password
+        if (!$this->zfcUserAuthentication()->hasIdentity() && !$check) {
+            // redirect to the login redirect route
+            return $this->redirect()->toRoute($this->getOptions()->getLoginRedirectRoute());
+        }
+        // Call Form FIX
+        $form = $this->getResetPasswordForm();
+        // var_dump($form);
+        $prg = $this->prg($this->url()->fromRoute(static::ROUTE_RESETPASSWD, array('token' => $token)), true);
+        $fm = $this->flashMessenger()->setNamespace('change-password')->getMessages();
+        if (isset($fm[0])) {
+            $status = $fm[0];
+        } else {
+            $status = null;
+        }
+
+        
+        if ($prg instanceof Response) {
+            return $prg;
+        } elseif ($prg === false) {
+            return array(
+                'status' => $status,
+                'token' => $token,
+                'changePasswordForm' => $form,
+            );
+        }
+        
+        $form->setData($prg);
+
+        if (!$form->isValid()) {
+            return array(
+                'status' => false,
+                'token' => $token,
+                'changePasswordForm' => $form,
+            );
+        }
+
+        if (!$this->getUserService()->changePassword($form->getData(), $tokenSplit[0])) {
+            return array(
+                'status' => false,
+                'token' => $token,
+                'changePasswordForm' => $form,
+            );
+        }
+
+        // Clear identity
+        $this->zfcUserAuthentication()->getAuthAdapter()->resetAdapters();
+        $this->zfcUserAuthentication()->getAuthService()->clearIdentity();
+        // Redirect
+        $this->flashMessenger()->setNamespace('change-password')->addMessage(true);
+        return $this->redirect()->toRoute($this->getOptions()->getLoginRedirectRoute());
+        
     }
 
     public function changeEmailAction()
@@ -530,6 +589,20 @@ class UserController extends AbstractActionController
     public function setChangePasswordForm(Form $changePasswordForm)
     {
         $this->changePasswordForm = $changePasswordForm;
+        return $this;
+    }
+    
+    public function getResetPasswordForm()
+    {
+        if (!$this->resetPasswordForm) {
+            $this->setResetPasswordForm($this->getServiceLocator()->get('zfcuser_reset_password_form'));
+        }
+        return $this->resetPasswordForm;
+    }
+
+    public function setResetPasswordForm(Form $resetPasswordForm)
+    {
+        $this->resetPasswordForm = $resetPasswordForm;
         return $this;
     }
 

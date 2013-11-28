@@ -94,7 +94,7 @@ return array(
                             'route' => '/reset-password/:token',
                             'defaults' => array(
                                 'controller' => 'zfcuser',
-                                'action'     => 'changepassword',
+                                'action'     => 'resetpassword',
                             ),
                         ),                        
                     ),

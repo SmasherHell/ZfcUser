@@ -144,6 +144,13 @@ class Module implements
                     return $form;
                 },
                         
+                'zfcuser_reset_password_form' => function($sm) {
+                    $options = $sm->get('zfcuser_module_options');
+                    $form = new Form\ResetPassword(null, $sm->get('zfcuser_module_options'));
+                    $form->setInputFilter(new Form\ResetPasswordFilter($options));
+                    return $form;
+                },
+                        
                 'zfcuser_forgot_password' => function($sm) {
                     $options = $sm->get('zfcuser_module_options');
                     $form = new Form\ForgotPassword(null, $sm->get('zfcuser_module_options'));
